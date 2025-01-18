@@ -6,58 +6,34 @@ import ErrorMessage from "../features/ErrorMessage";
 
 const KEY = "a6c26c0c";
 
+// A React component that displays the details of a selected movie
 function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
+  // State variables to store the movie details, error messages, and loading state
   const [movie, setMovie] = useState({});
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [userRating, setUserRating] = useState("");
 
-  // countRef is a reference to a mutable value that is initialized to 0.
-  // It is used to keep track of how many times the user has rated the movie.
-  // This value is used to conditionally render the "You have already rated this movie" message.
+  // A mutable value that is initialized to 0 and is used to keep track of how many times the user has rated the movie.
   const countRef = useRef(0);
 
+  // An effect hook that increments the count whenever the userRating state changes.
   useEffect(
     function () {
-      // If the user has rated the movie (i.e. userRating is truthy), increment the count.
-      // This effect is run whenever the userRating state changes.
       if (userRating) countRef.current++;
     },
     [userRating]
   );
 
-  // Create an array of just the IDs of the watched movies
-  // then use the includes() method to check if the selected ID is in the array
-  const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
-
-  // Find the movie in the watched list that has the same ID as the selected ID
-  // and get its userRating property. If the movie is not found, this will be undefined.
-  // The optional chaining operator (?.) is used to avoid an error if the movie is not found.
-  const watchedUserRating = watched.find(
-    (movie) => movie.imdbID === selectedId
-  )?.userRating;
-
-  const {
-    Title: title,
-    Year: year,
-    Poster: poster,
-    Runtime: runtime,
-    imdbRating,
-    Plot: plot,
-    Released: released,
-    Actors: actors,
-    Director: director,
-    Genre: genre,
-  } = movie;
-
+  // A function that adds the selected movie to the watched list
   function handleAdd() {
     const newWatchedMovie = {
       imdbID: selectedId,
-      title,
-      year,
-      poster,
-      imdbRating: Number(imdbRating),
-      runtime: Number(runtime.split(" ").at(0)),
+      title: movie.Title,
+      year: movie.Year,
+      poster: movie.Poster,
+      imdbRating: Number(movie.imdbRating),
+      runtime: Number(movie.Runtime.split(" ").at(0)),
       userRating,
       countRatingDecisions: countRef.current,
     };
@@ -66,8 +42,10 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     onCloseMovie();
   }
 
+  // A hook that listens for the Backspace key and calls onCloseMovie when pressed
   useKey("Backspace", onCloseMovie);
 
+  // An effect hook that fetches the movie details from the OMDB API when the selected ID changes
   useEffect(
     function () {
       async function getMovieDetails() {
@@ -93,19 +71,21 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     [selectedId]
   );
 
+  // An effect hook that updates the page title when the movie title changes
   useEffect(
     function () {
-      if (!title) return;
-      document.title = title;
+      if (!movie.Title) return;
+      document.title = movie.Title;
 
       return function () {
         document.title = "My Movies";
-        // console.log(`Clean up effect for movie ${title}`);
+        // console.log(`Clean up effect for movie ${movie.Title}`);
       };
     },
-    [title]
+    [movie.Title]
   );
 
+  // Render the movie details component
   return (
     <div className="details">
       {isLoading && <Loader />}
@@ -119,23 +99,23 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
             >
               &larr;
             </button>
-            <img src={poster} alt={`Poster of ${movie} movie`} />
+            <img src={movie.Poster} alt={`Poster of ${movie} movie`} />
             <div className="details-overview">
-              <h2>{title}</h2>
+              <h2>{movie.Title}</h2>
               <p>
-                {released} &bull; {runtime}
+                {movie.Released} &bull; {movie.Runtime}
               </p>
-              <p>{genre}</p>
+              <p>{movie.Genre}</p>
               <p>
                 <span>⭐️</span>
-                {imdbRating} IMDb rating
+                {movie.imdbRating} IMDb rating
               </p>
             </div>
           </header>
 
           <section>
             <div className="rating">
-              {!isWatched ? (
+              {!watched.includes(selectedId) ? (
                 <>
                   <StarRating
                     maxRating={10}
@@ -150,16 +130,15 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
                 </>
               ) : (
                 <p>
-                  You rated this movie | <span>⭐</span> {watchedUserRating}{" "}
-                  rating.
+                  You rated this movie | <span>⭐</span> {userRating} rating.
                 </p>
               )}
             </div>
             <p>
-              <em>{plot}</em>
+              <em>{movie.Plot}</em>
             </p>
-            <p>Starring {actors}</p>
-            <p>Directed by {director}</p>
+            <p>Starring {movie.Actors}</p>
+            <p>Directed by {movie.Director}</p>
           </section>
         </>
       )}
